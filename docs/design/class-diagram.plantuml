@@ -1,0 +1,99 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class User {
+  + int id
+  + string email
+  + string passwordHash
+  + string fullName
+  + string phone
+  + string role
+  + boolean isVerified
+  + DateTime createdAt
+}
+
+class Subscription {
+  + int id
+  + int userId
+  + string plan
+  + int listingQuota
+  + string status
+  + DateTime startsAt
+  + DateTime endsAt
+}
+
+class Listing {
+  + int id
+  + int sellerId
+  + string title
+  + string description
+  + string defects
+  + string category
+  + string city
+  + string district
+  + string status
+  + DateTime createdAt
+}
+
+class Auction {
+  + int id
+  + int listingId
+  + int startPrice
+  + int minIncrement
+  + int currentPrice
+  + int highestBidId
+  + DateTime startTime
+  + DateTime endTime
+  + int extensionCount
+  + string status
+  + int winnerId
+}
+
+class Bid {
+  + int id
+  + int auctionId
+  + int bidderId
+  + int amount
+  + boolean isAuto
+  + string idempotencyKey
+  + DateTime createdAt
+}
+
+class Appointment {
+  + int id
+  + int auctionId
+  + int buyerId
+  + int sellerId
+  + int agreedPrice
+  + string location
+  + DateTime meetingTime
+  + boolean buyerAccepted
+  + boolean sellerAccepted
+  + string otpHash
+  + string status
+}
+
+' Strategy Design Pattern Sınıfları
+interface ITrustScoreStrategy {
+  + calculateScore(userId: int): float
+}
+
+class BuyerTrustStrategy {
+  + calculateScore(userId: int): float
+}
+
+class SellerTrustStrategy {
+  + calculateScore(userId: int): float
+}
+
+' İlişkiler (Associations & Realization)
+User "1" --> "0..*" Listing : creates >
+User "1" --> "0..*" Subscription : has >
+Listing "1" --> "1" Auction : opens >
+Auction "1" --> "0..*" Bid : receives >
+Auction "1" --> "0..1" Appointment : results in >
+
+ITrustScoreStrategy <|.. BuyerTrustStrategy
+ITrustScoreStrategy <|.. SellerTrustStrategy
+
+@enduml
