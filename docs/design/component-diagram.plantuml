@@ -1,0 +1,61 @@
+@startuml Component Diagram - BidArena Architectural Components
+
+package "Mobile Client (Flutter)" {
+  [UI Components & Screens] as UI
+  [WebSocket Client] as WSClient
+  [HTTP REST Client] as HTTPClient
+}
+
+package "Backend Server (FastAPI / Python)" {
+  package "API Layer" {
+    [REST API Router (bids.py / auctions.py)] as APIRouter
+  }
+  
+  package "Core & Real-Time Engine" {
+    [ConnectionManager (Observer Pattern)] as WSManager
+    [TrustScoreContext (Strategy Pattern)] as TrustContext
+  }
+  
+  package "Business & Strategy Layer" {
+    interface "ITrustScoreStrategy" as IStrategy
+    [DefaultTrustStrategy] as StrategyDefault
+    [HighValueAuctionTrustStrategy] as StrategyHighValue
+  }
+  
+  package "Data Access Layer (ORM)" {
+    [SQLAlchemy Data Models] as Models
+    [Database Engine (database.py)] as DBEngine
+  }
+}
+
+database "PostgreSQL Database" {
+  [Users Table]
+  [Auctions Table]
+  [Bids Table]
+  [Delivery / OTP Records]
+}
+
+cloud "External Services" {
+  [SMS / OTP Gateway] as Gateway
+}
+
+' Connections & Interfaces
+UI --> HTTPClient
+UI --> WSClient
+
+HTTPClient --> APIRouter : HTTP / JSON
+WSClient --> WSManager : WebSocket Protocol (wss://)
+
+APIRouter --> WSManager : Broadcast New Bids
+APIRouter --> TrustContext : Calculate Trust Score
+APIRouter --> Models : Read/Write Operations
+
+TrustContext ..> IStrategy
+IStrategy <|.. StrategyDefault
+IStrategy <|.. StrategyHighValue
+
+Models --> DBEngine
+DBEngine --> "PostgreSQL Database" : SQL / Pessimistic Locking (FOR UPDATE)
+APIRouter ..> Gateway : Send OTP Verification
+
+@enduml

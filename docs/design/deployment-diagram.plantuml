@@ -1,0 +1,34 @@
+@startuml Deployment Diagram - BidArena System Infrastructure
+
+node "Client Side" {
+  node "User Smartphone (Android / iOS)" <<Device>> {
+    artifact "BidArena Mobile App (Flutter APK / IPA)" as MobileApp
+  }
+}
+
+node "Application Server Container" <<Linux Host / Docker Container>> {
+  node "ASGI Web Server" <<Uvicorn Process>> {
+    artifact "FastAPI Backend Application" as BackendApp
+  }
+}
+
+node "Database Server Container" <<Linux Host / Docker Container>> {
+  database "PostgreSQL DB Management System" <<PostgreSQL 15+>> {
+    artifact "bidarena_db (Relational Data)" as DBData
+  }
+}
+
+cloud "Third-Party Cloud Services" {
+  node "SMS Provider Gateway" <<External API>> {
+    artifact "OTP Verification Service" as OTPService
+  }
+}
+
+' Network Protocols & Connections
+MobileApp -- BackendApp : HTTPS / JSON (Port 443 / 8000)
+MobileApp -- BackendApp : WSS / WebSockets (Port 443 / 8000)
+
+BackendApp -- DBData : TCP/IP (SQL Connection / Port 5432)
+BackendApp -- OTPService : HTTPS REST API Call
+
+@enduml
