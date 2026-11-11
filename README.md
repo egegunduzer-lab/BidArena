@@ -23,23 +23,6 @@ Proje, yüksek performanslı ve eşzamanlı (concurrent) işlemleri destekleyen 
 *   **Mimari Desenler:** Observer Pattern, Strategy Pattern
 *   **Eşzamanlılık Kontrolü:** Pessimistic Locking (`SELECT ... FOR UPDATE`)
 
-##  Dizin Yapısı
-BidArena/
-├── backend/                  # API ve Sunucu kodları
-│   ├── app/
-│   │   ├── api/              # REST API Rotaları (Endpoints)
-│   │   ├── core/             # İş Mantığı (WebSocket Manager, Strategy, DB Connection)
-│   │   └── models/           # SQLAlchemy ORM Modelleri
-│   ├── tests/                # Birim (Unit) Testleri
-│   ├── main.py               # FastAPI Uygulama Giriş Noktası
-│   └── requirements.txt      # Python Bağımlılıkları
-├── docs/                     # Dokümantasyon ve Tasarım Çıktıları
-│   ├── adr/                  # Mimari Karar Kayıtları (ADR-01, ADR-02)
-│   ├── design/               # UML Diyagramları (Class, Component, Deployment)
-│   ├── BidArenaER.png        # Veritabanı İlişki Şeması (ER Diagram)
-│   ├── er-diyagram.md        # Veritabanı Dokümantasyonu
-│   └── wireframes.md         # Arayüz (UI) Taslakları
-└── README.md                 # Proje Tanıtım Dosyası
 
 ##  Kurulum ve Çalıştırma (Yerel Geliştirme)
 
