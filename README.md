@@ -16,7 +16,7 @@ Bu proje, **Yazılım Tasarımı ve Mimarisi** dersi kapsamında geliştirilmiş
 
 Proje, yüksek performanslı ve eşzamanlı (concurrent) işlemleri destekleyen modern bir teknoloji yığını ile inşa edilmiştir:
 
-*   **Backend Framework:** FastAPI (Python 3.12)
+*   **Backend Framework:** FastAPI (Python 3.12+, 3.14 ile test edildi)
 *   **Gerçek Zamanlı İletişim:** WebSockets (Observer Pattern)
 *   **Veritabanı:** PostgreSQL
 *   **ORM:** SQLAlchemy
@@ -30,7 +30,7 @@ Projeyi yerel ortamınızda çalıştırmak için aşağıdaki adımları izleyi
 
 **1. Depoyu Klonlayın**
 ```bash
-git clone [https://github.com/egegunduzer-lab/BidArena.git](https://github.com/egegunduzer-lab/BidArena.git)
+git clone https://github.com/egegunduzer-lab/BidArena.git
 cd BidArena/backend
 ```
 **2. Sanal Ortam Oluşturun ve Aktif Edin**
@@ -45,10 +45,27 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
-**4. PostgreSQL Veritabanını Ayarlayın**
+**4. PostgreSQL Veritabanını Kurun**
+
+Veritabanını oluşturup şemayı ve örnek veriyi yükleyin (proje ana klasöründen):
 ```bash
-backend/app/core/database.py dosyasındaki bağlantı dizesini kendi yerel PostgreSQL bilgilerinize göre güncelleyin.
+createdb bidarena
+psql -d bidarena -f docs/schema.sql
+psql -d bidarena -f docs/seed.sql
 ```
+`seed.sql` tekrar çalıştırılabilir; tabloları boşaltıp örnek veriyi yeniden yükler. Örnek veri, proje dokümanındaki 4 senaryonun (canlı açık artırma, elden teslim, satış gerçekleşmezse yedek alıcı, ürün uyuşmazlığı) hepsini içerir.
+
+Backend varsayılan olarak `postgresql+psycopg2://localhost:5432/bidarena` adresine bağlanır (Postgres.app için ek ayar gerekmez). Kullanıcı adı/şifre gerekiyorsa `DATABASE_URL` ortam değişkenini ayarlayın:
+```bash
+export DATABASE_URL="postgresql+psycopg2://kullanici:sifre@localhost:5432/bidarena"
+```
+Bağlantıyı ve modellerin şemayla uyumunu kontrol etmek için (`backend` klasöründe):
+```bash
+python check_db.py
+```
+Sonuç satırında "Her şey yolunda" görünmelidir.
+
+> Not: Tabloların tek kaynağı `docs/schema.sql` dosyasıdır. Şema değişirse `backend/app/models.py` de güncellenmeli; `check_db.py` aradaki farkı gösterir.
 **5. Sunucuyu Başlatın**
 ```bash
 uvicorn main:app --reload
