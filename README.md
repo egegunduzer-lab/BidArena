@@ -97,9 +97,11 @@ Windows PowerShell'de: `$env:TEST_DATABASE_URL="postgresql+psycopg2://localhost:
 PNG'ler PlantUML kaynaklarından üretilir: `java -jar plantuml.jar -tpng -charset UTF-8 docs/design/*.plantuml`
 
 ## Mimari Kararlar
-ADR-01: Gerçek zamanlı teklif iletimi için standart HTTP Polling yerine FastAPI WebSockets kullanılmasına karar verilmiştir.
+Ayrıntılar, değerlendirilen alternatifler ve doğrulayan testler [docs/adr](docs/adr) klasöründedir.
 
-ADR-02: Veritabanında eşzamanlı teklif çakışmalarını (Race Condition) önlemek için PostgreSQL seviyesinde Pessimistic Locking mekanizması uygulanmıştır.
+ADR-01: Gerçek zamanlı yayın için FastAPI WebSocket kullanılır (Observer). Teklifler REST ile verilir, WebSocket yalnızca commit sonrası yayın içindir; bağlanan istemci sunucu saatini içeren anlık durumu alır.
+
+ADR-02: Eşzamanlı teklif çakışmalarını (race condition) önlemek için açık artırma satırı `SELECT ... FOR UPDATE` ile kilitlenir; saat ve idempotency kontrolü kilitten sonra yapılır. 100 eşzamanlı teklif testleriyle doğrulanmıştır.
 
 ADR-03: Açık artırma kapanışı, uygulama içinde periyodik çalışan bir arka plan göreviyle yapılır; satır `FOR UPDATE SKIP LOCKED` ile kilitlenir ve bitiş zamanı kilit alındıktan sonra yeniden kontrol edilir.
 
