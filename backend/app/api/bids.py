@@ -1,13 +1,13 @@
 """
-Teklif uÃ§ noktalarÄ± (REST).
+Teklif uç noktaları (REST).
 
-Bu katman yalnÄ±zca HTTP ile ilgilenir: girdiyi doÄŸrular, servisi Ã§aÄŸÄ±rÄ±r,
-iÅŸ kuralÄ± hatalarÄ±nÄ± HTTP kodlarÄ±na Ã§evirir ve iÅŸlem commit edildikten
-SONRA yeni durumu WebSocket ile yayÄ±nlar. Kural mantÄ±ÄŸÄ± BidService'tedir.
+Bu katman yalnızca HTTP ile ilgilenir: girdiyi doğrular, servisi çağırır,
+iş kuralı hatalarını HTTP kodlarına çevirir ve işlem commit edildikten
+SONRA yeni durumu WebSocket ile yayınlar. Kural mantığı BidService'tedir.
 
-Kimlik doÄŸrulama modÃ¼lÃ¼ henÃ¼z yok; teklif veren kullanÄ±cÄ± geÃ§ici olarak
-`X-User-Id` baÅŸlÄ±ÄŸÄ±yla belirtilir. Auth eklendiÄŸinde yalnÄ±zca
-`current_user_id` baÄŸÄ±mlÄ±lÄ±ÄŸÄ± deÄŸiÅŸecek, servis kodu deÄŸiÅŸmeyecek.
+Kimlik doğrulama modülü henüz yok; teklif veren kullanıcı geçici olarak
+`X-User-Id` başlığıyla belirtilir. Auth eklendiğinde yalnızca
+`current_user_id` bağımlılığı değişecek, servis kodu değişmeyecek.
 """
 from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
 from sqlalchemy.orm import Session
@@ -27,7 +27,7 @@ from app.services.errors import (
     UserNotFound,
 )
 
-router = APIRouter(tags=["AÃ§Ä±k artÄ±rma ve teklifler"])
+router = APIRouter(tags=["Açık artırma ve teklifler"])
 
 ERROR_STATUS = {
     AuctionNotFound: status.HTTP_404_NOT_FOUND,
@@ -41,7 +41,7 @@ ERROR_STATUS = {
 ERROR_RESPONSES = {code: {"model": ErrorResponse} for code in (403, 404, 409, 422)}
 
 
-def current_user_id(x_user_id: int = Header(..., description="GeÃ§ici: teklif veren kullanÄ±cÄ±")) -> int:
+def current_user_id(x_user_id: int = Header(..., description="Geçici: teklif veren kullanıcı")) -> int:
     return x_user_id
 
 
@@ -65,7 +65,7 @@ async def publish(outcome: BidOutcome) -> None:
     "/auctions/{auction_id}/bids",
     response_model=BidResponse,
     status_code=status.HTTP_201_CREATED,
-    responses={200: {"description": "MÃ¼kerrer istek: ilk sonucu dÃ¶ner"}, **ERROR_RESPONSES},
+    responses={200: {"description": "Mükerrer istek: ilk sonucu döner"}, **ERROR_RESPONSES},
 )
 async def place_bid(
     auction_id: int,
@@ -75,10 +75,10 @@ async def place_bid(
     user_id: int = Depends(current_user_id),
     service: BidService = Depends(get_bid_service),
 ):
-    """Teklif verir. AynÄ± `Idempotency-Key` ile tekrar gÃ¶nderilirse yeni teklif aÃ§Ä±lmaz."""
+    """Teklif verir. Aynı `Idempotency-Key` ile tekrar gönderilirse yeni teklif açılmaz."""
     try:
-        # Servis bloklayan veritabanÄ± Ã§aÄŸrÄ±larÄ± yapar; event loop'u tÄ±kamamak
-        # iÃ§in ayrÄ± thread'de Ã§alÄ±ÅŸÄ±r.
+        # Servis bloklayan veritabanı çağrıları yapar; event loop'u tıkamamak
+        # için ayrı thread'de çalışır.
         outcome = await run_in_threadpool(
             service.place_bid, auction_id, user_id, body.amount, idempotency_key
         )
@@ -102,7 +102,7 @@ async def set_auto_bid(
     user_id: int = Depends(current_user_id),
     service: BidService = Depends(get_bid_service),
 ):
-    """Otomatik teklif Ã¼st limitini kaydeder; gerekirse hemen teklif verir."""
+    """Otomatik teklif üst limitini kaydeder; gerekirse hemen teklif verir."""
     try:
         outcome = await run_in_threadpool(
             service.set_auto_bid_limit, auction_id, user_id, body.max_amount
@@ -115,7 +115,7 @@ async def set_auto_bid(
 
 @router.get("/auctions/{auction_id}", response_model=AuctionState, responses=ERROR_RESPONSES)
 async def get_auction(auction_id: int, service: BidService = Depends(get_bid_service)):
-    """AnlÄ±k fiyat, bitiÅŸ zamanÄ±, sunucu saati (geri sayÄ±m iÃ§in) ve son teklifler."""
+    """Anlık fiyat, bitiş zamanı, sunucu saati (geri sayım için) ve son teklifler."""
     try:
         return await run_in_threadpool(service.get_state, auction_id)
     except BidError as err:
