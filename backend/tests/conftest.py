@@ -17,6 +17,9 @@ if os.getenv("TEST_DATABASE_URL"):
     # app.core.database import edilmeden önce ayarlanmalı.
     os.environ["DATABASE_URL"] = os.environ["TEST_DATABASE_URL"]
 
+# Arka plan kapanış zamanlayıcısı testlerde kapalı; gereken test kendisi açar.
+os.environ.setdefault("AUCTION_CLOSER_ENABLED", "0")
+
 import pytest
 
 from app.core.database import SessionLocal, engine
