@@ -70,9 +70,27 @@ Sonuç satırında "Her şey yolunda" görünmelidir.
 ```bash
 uvicorn main:app --reload
 ```
+API dokümantasyonu: http://localhost:8000/docs
+
+Sunucu açıkken arka planda her saniye süresi dolan açık artırmaları kapatan bir görev çalışır (ADR-03). Aralığı `AUCTION_CLOSER_INTERVAL` (saniye) ile değiştirilebilir, `AUCTION_CLOSER_ENABLED=0` ile kapatılabilir.
+
+**6. Testleri Çalıştırın**
+
+Testler her seferinde `docs/seed.sql` ile veritabanını sıfırlar; bu yüzden **ayrı bir test veritabanı** kullanın:
+```bash
+createdb bidarena_test
+psql -d bidarena_test -f docs/schema.sql
+cd backend
+pip install -r requirements-dev.txt
+TEST_DATABASE_URL="postgresql+psycopg2://localhost:5432/bidarena_test" pytest
+```
+Windows PowerShell'de: `$env:TEST_DATABASE_URL="postgresql+psycopg2://localhost:5432/bidarena_test"; pytest`
+
 ## Mimari Kararlar
 ADR-01: Gerçek zamanlı teklif iletimi için standart HTTP Polling yerine FastAPI WebSockets kullanılmasına karar verilmiştir.
 
 ADR-02: Veritabanında eşzamanlı teklif çakışmalarını (Race Condition) önlemek için PostgreSQL seviyesinde Pessimistic Locking mekanizması uygulanmıştır.
+
+ADR-03: Açık artırma kapanışı, uygulama içinde periyodik çalışan bir arka plan göreviyle yapılır; satır `FOR UPDATE SKIP LOCKED` ile kilitlenir ve bitiş zamanı kilit alındıktan sonra yeniden kontrol edilir.
 
 
