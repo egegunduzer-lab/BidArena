@@ -1,5 +1,7 @@
 # BidArena - Gerçek Zamanlı Mobil Açık Artırma Platformu
 
+[![Backend Tests](https://github.com/egegunduzer-lab/BidArena/actions/workflows/backend-tests.yml/badge.svg)](https://github.com/egegunduzer-lab/BidArena/actions/workflows/backend-tests.yml)
+
 BidArena, kullanıcıların ikinci el veya yeni eşyalarını gerçek zamanlı açık artırma usulüyle satabildiği ve alıcıların canlı olarak teklif verebildiği bir mobil uygulamadır.
 
 ##  Proje Hakkında
@@ -85,6 +87,8 @@ pip install -r requirements-dev.txt
 TEST_DATABASE_URL="postgresql+psycopg2://localhost:5432/bidarena_test" pytest
 ```
 Windows PowerShell'de: `$env:TEST_DATABASE_URL="postgresql+psycopg2://localhost:5432/bidarena_test"; pytest`
+
+**Sürekli Entegrasyon (CI):** `main`'e her push'ta ve her pull request'te GitHub Actions ([backend-tests.yml](.github/workflows/backend-tests.yml)) PostgreSQL 17 açar, şemayı ve örnek veriyi yükler, `check_db.py` ile model/şema uyumunu doğrular ve tüm testleri çalıştırır. Sonuçlar [Actions](https://github.com/egegunduzer-lab/BidArena/actions) sekmesinde görülür; JUnit raporu her çalıştırmada artifact olarak indirilebilir.
 
 ## Mimari Kararlar
 ADR-01: Gerçek zamanlı teklif iletimi için standart HTTP Polling yerine FastAPI WebSockets kullanılmasına karar verilmiştir.
