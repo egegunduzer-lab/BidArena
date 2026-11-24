@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from app.api import bids
+
+from app.api import bids, realtime
 
 app = FastAPI(
     title="BidArena API",
@@ -8,6 +9,7 @@ app = FastAPI(
 )
 
 app.include_router(bids.router, prefix="/api")
+app.include_router(realtime.router)
 
 @app.get("/")
 def read_root():
