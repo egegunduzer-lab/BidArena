@@ -1,34 +1,83 @@
-@startuml Deployment Diagram - BidArena System Infrastructure
+@startuml Deployment Diagram - BidArena
+' BidArena dağıtım diyagramı: prototipin gerçekte nasıl çalıştığı.
+' <<planlanan>> işaretli düğümler henüz yoktur.
 
-node "Client Side" {
-  node "User Smartphone (Android / iOS)" <<Device>> {
-    artifact "BidArena Mobile App (Flutter APK / IPA)" as MobileApp
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam ArrowColor #444444
+skinparam node {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam artifact {
+  BackgroundColor #F7F7F7
+  BorderColor #666666
+}
+skinparam note {
+  BackgroundColor #FFFBE6
+  BorderColor #C9B458
+}
+
+title BidArena - Dağıtım Diyagramı
+
+node "Kullanıcı Cihazı (PC / Telefon)" <<device>> {
+  node "Web Tarayıcısı" <<execution environment>> {
+    artifact "BidArena Web Arayüzü\n(React SPA, Vite build)" as WebApp
+  }
+  node "Android / iOS" <<execution environment>> <<planlanan>> {
+    artifact "BidArena Mobil\n(Flutter APK / IPA)" as MobileApp
   }
 }
 
-node "Application Server Container" <<Linux Host / Docker Container>> {
-  node "ASGI Web Server" <<Uvicorn Process>> {
-    artifact "FastAPI Backend Application" as BackendApp
+node "Uygulama Sunucusu" <<Linux / Windows host>> {
+  node "Uvicorn (ASGI)" <<process>> {
+    artifact "FastAPI uygulaması\n(backend/main.py)" as Backend
+    artifact "Kapanış zamanlayıcısı\n(lifespan asyncio görevi)" as Closer
+    artifact "ConnectionManager\n(süreç içi WebSocket odaları)" as Rooms
   }
 }
 
-node "Database Server Container" <<Linux Host / Docker Container>> {
-  database "PostgreSQL DB Management System" <<PostgreSQL 15+>> {
-    artifact "bidarena_db (Relational Data)" as DBData
+node "Veritabanı Sunucusu" <<host>> {
+  database "PostgreSQL 17" <<DBMS>> {
+    artifact "bidarena\n(docs/schema.sql)" as DBData
   }
 }
 
-cloud "Third-Party Cloud Services" {
-  node "SMS Provider Gateway" <<External API>> {
-    artifact "OTP Verification Service" as OTPService
+node "GitHub" <<cloud>> {
+  node "GitHub Actions runner\n(ubuntu-latest)" <<CI>> {
+    artifact "backend-tests.yml\n(check_db.py + pytest)" as CI
+    database "postgres:17\n(servis konteyneri)" as CIDB
   }
 }
 
-' Network Protocols & Connections
-MobileApp -- BackendApp : HTTPS / JSON (Port 443 / 8000)
-MobileApp -- BackendApp : WSS / WebSockets (Port 443 / 8000)
+WebApp -- Backend : HTTPS / JSON\n(REST, port 8000)
+WebApp -- Rooms : WSS\n/ws/auctions/{id}
+MobileApp -- Backend : HTTPS / JSON
+MobileApp -- Rooms : WSS
 
-BackendApp -- DBData : TCP/IP (SQL Connection / Port 5432)
-BackendApp -- OTPService : HTTPS REST API Call
+Backend -- DBData : TCP 5432\n(SQLAlchemy + psycopg2)
+Closer -- DBData : TCP 5432\n(her 1 sn kapanış turu)
+
+CI -- CIDB : TCP 5432
+
+note right of Rooms
+  WebSocket bağlantıları tek Uvicorn
+  sürecinin belleğindedir. Birden fazla
+  süreç / sunucuya ölçeklemek için yayın
+  Redis Pub/Sub gibi ortak bir kanala
+  taşınmalıdır.
+end note
+
+note bottom of Closer
+  Birden fazla süreç çalışsa da her açık
+  artırma bir kez kapanır:
+  FOR UPDATE SKIP LOCKED + yeniden kontrol (ADR-03).
+end note
+
+note bottom of CI
+  main'e her push'ta ve her PR'da
+  şema yüklenir, testler çalışır,
+  JUnit raporu artifact olarak saklanır.
+end note
 
 @enduml

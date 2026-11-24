@@ -90,6 +90,12 @@ Windows PowerShell'de: `$env:TEST_DATABASE_URL="postgresql+psycopg2://localhost:
 
 **Sürekli Entegrasyon (CI):** `main`'e her push'ta ve her pull request'te GitHub Actions ([backend-tests.yml](.github/workflows/backend-tests.yml)) PostgreSQL 17 açar, şemayı ve örnek veriyi yükler, `check_db.py` ile model/şema uyumunu doğrular ve tüm testleri çalıştırır. Sonuçlar [Actions](https://github.com/egegunduzer-lab/BidArena/actions) sekmesinde görülür; JUnit raporu her çalıştırmada artifact olarak indirilebilir.
 
+## Mimari Diyagramlar
+- [Bileşen diyagramı](docs/design/component-diagram.png) ([kaynak](docs/design/component-diagram.plantuml)): API, servis, çekirdek ve veri erişim katmanları
+- [Dağıtım diyagramı](docs/design/deployment-diagram.png) ([kaynak](docs/design/deployment-diagram.plantuml)): istemci, Uvicorn süreci, PostgreSQL ve CI
+
+PNG'ler PlantUML kaynaklarından üretilir: `java -jar plantuml.jar -tpng -charset UTF-8 docs/design/*.plantuml`
+
 ## Mimari Kararlar
 ADR-01: Gerçek zamanlı teklif iletimi için standart HTTP Polling yerine FastAPI WebSockets kullanılmasına karar verilmiştir.
 

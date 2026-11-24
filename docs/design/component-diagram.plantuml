@@ -1,61 +1,118 @@
-@startuml Component Diagram - BidArena Architectural Components
+@startuml Component Diagram - BidArena
+' BidArena bileşen diyagramı: backend'in gerçek katmanları ve dosyaları.
+' Her bileşenin altındaki yol, koddaki karşılığıdır.
+' <<planlanan>> işaretli bileşenler henüz kodda yoktur.
 
-package "Mobile Client (Flutter)" {
-  [UI Components & Screens] as UI
-  [WebSocket Client] as WSClient
-  [HTTP REST Client] as HTTPClient
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam packageStyle rectangle
+skinparam ArrowColor #444444
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #444444
+}
+skinparam package {
+  BackgroundColor #F7F7F7
+  BorderColor #888888
+}
+skinparam note {
+  BackgroundColor #FFFBE6
+  BorderColor #C9B458
 }
 
-package "Backend Server (FastAPI / Python)" {
-  package "API Layer" {
-    [REST API Router (bids.py / auctions.py)] as APIRouter
+top to bottom direction
+title BidArena - Bileşen Diyagramı (Katmanlı Mimari)
+
+package "İstemciler" {
+  [Web Arayüzü\n(React + Vite)\nfrontend_web/] as Web
+  [Mobil Alıcı Uygulaması\n(Flutter)] <<planlanan>> as Mobile
+}
+
+package "Backend (FastAPI, Python)  -  backend/" {
+
+  package "API Katmanı  (HTTP / WebSocket)" {
+    [Teklif REST Router\napp/api/bids.py] as BidsAPI
+    [Canlı Yayın WebSocket\napp/api/realtime.py] as WSAPI
+    [İstek / Yanıt Şemaları\n(Pydantic)\napp/schemas.py] as Schemas
   }
-  
-  package "Core & Real-Time Engine" {
-    [ConnectionManager (Observer Pattern)] as WSManager
-    [TrustScoreContext (Strategy Pattern)] as TrustContext
+
+  package "Servis Katmanı  (iş kuralları, HTTP bilmez)" {
+    [BidService\napp/services/bid_service.py] as BidService
+    [BidPolicy\n(değiştirilebilir kurallar)] as Policy
+    [AuctionCloser\napp/services/auction_service.py] as Closer
+    [İş Kuralı Hataları\napp/services/errors.py] as Errors
   }
-  
-  package "Business & Strategy Layer" {
-    interface "ITrustScoreStrategy" as IStrategy
-    [DefaultTrustStrategy] as StrategyDefault
-    [HighValueAuctionTrustStrategy] as StrategyHighValue
+
+  package "Alan Mantığı" {
+    interface "ITrustScoreStrategy" as ITrust
+    [BuyerTrustStrategy] as BuyerTrust
+    [SellerTrustStrategy] as SellerTrust
   }
-  
-  package "Data Access Layer (ORM)" {
-    [SQLAlchemy Data Models] as Models
-    [Database Engine (database.py)] as DBEngine
+
+  package "Çekirdek / Altyapı  -  app/core/" {
+    [ConnectionManager\n(Observer)\nwebsocket_manager.py] as WSManager
+    [Kapanış Zamanlayıcısı\n(asyncio görevi)\nscheduler.py] as Scheduler
+    [Veritabanı Oturumu\n(engine, get_db)\ndatabase.py] as DB
+  }
+
+  package "Veri Erişim Katmanı" {
+    [SQLAlchemy Modelleri\n(15 tablo)\napp/models.py] as Models
   }
 }
 
-database "PostgreSQL Database" {
-  [Users Table]
-  [Auctions Table]
-  [Bids Table]
-  [Delivery / OTP Records]
+database "PostgreSQL 17\n(docs/schema.sql)" as PG {
+  [Tablolar: users, auctions, bids,\nauto_bid_limits, appointments,\nnotifications, audit_logs, ...] as Tables
+  [Kurallar: CHECK, unique index\n(idempotency, tek aktif yedek davet),\nçift onay trigger'ı] as Rules
 }
 
-cloud "External Services" {
-  [SMS / OTP Gateway] as Gateway
-}
+' --- İstemci -> API
+Web ..> BidsAPI : HTTP / JSON\n(planlanan bağlantı)
+Web ..> WSAPI : WebSocket\n(planlanan bağlantı)
+Mobile ..> BidsAPI : HTTP / JSON
+Mobile ..> WSAPI : WebSocket
 
-' Connections & Interfaces
-UI --> HTTPClient
-UI --> WSClient
+' --- API katmanı
+BidsAPI --> Schemas : girdi doğrulama
+BidsAPI --> BidService : place_bid()\nset_auto_bid_limit()\nget_state()
+BidsAPI --> Errors : hata -> HTTP kodu
+BidsAPI --> WSManager : commit sonrası\nNEW_BID yayını
+WSAPI --> WSManager : connect / disconnect
+WSAPI --> BidService : SNAPSHOT (get_state)
 
-HTTPClient --> APIRouter : HTTP / JSON
-WSClient --> WSManager : WebSocket Protocol (wss://)
+' --- Servis katmanı
+BidService --> Policy : kural parametreleri
+BidService --> Errors : raise
+BidService --> Models : SELECT ... FOR UPDATE\n(ADR-02)
+Closer --> Models : FOR UPDATE SKIP LOCKED\n+ bitiş yeniden kontrolü (ADR-03)
 
-APIRouter --> WSManager : Broadcast New Bids
-APIRouter --> TrustContext : Calculate Trust Score
-APIRouter --> Models : Read/Write Operations
+' --- Zamanlayıcı
+Scheduler --> Closer : run_once()\nher N saniyede
+Scheduler --> WSManager : AUCTION_CLOSED /\nAUCTION_STARTED yayını
 
-TrustContext ..> IStrategy
-IStrategy <|.. StrategyDefault
-IStrategy <|.. StrategyHighValue
+' --- Strateji
+ITrust <|.. BuyerTrust
+ITrust <|.. SellerTrust
 
-Models --> DBEngine
-DBEngine --> "PostgreSQL Database" : SQL / Pessimistic Locking (FOR UPDATE)
-APIRouter ..> Gateway : Send OTP Verification
+' --- Katmanları yukarıdan aşağıya hizala
+BidsAPI -[hidden]down-> BidService
+BidService -[hidden]down-> Models
+Closer -[hidden]right-> ITrust
+Models -[hidden]right-> DB
+DB -[hidden]down-> PG
+
+' --- Veri
+Models --> DB
+DB --> PG : psycopg2 (TCP 5432)
+
+legend bottom right
+  **Notlar**
+  * ITrustScoreStrategy (Strategy deseni) tanımlı, henüz bir servis veya API tarafından kullanılmıyor.
+  * ConnectionManager bağlantıları süreç belleğinde tutar: tek Uvicorn süreci için doğru;
+    birden fazla süreçte yayın için Redis Pub/Sub gibi ortak bir kanal gerekir.
+  * <<planlanan>>: henüz kodda olmayan bileşen.
+endlegend
+
+note top of BidsAPI : Auth henüz yok:\nkullanıcı X-User-Id\nbaşlığıyla gelir
 
 @enduml
