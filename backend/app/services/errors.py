@@ -7,14 +7,20 @@ Böylece aynı servis REST, WebSocket veya testlerden aynı şekilde çağrılab
 """
 
 
-class BidError(Exception):
-    """Tüm teklif hatalarının temel sınıfı."""
+class DomainError(Exception):
+    """Tüm iş kuralı hatalarının temel sınıfı."""
 
-    code = "BID_ERROR"
+    code = "DOMAIN_ERROR"
 
     def __init__(self, message: str):
         super().__init__(message)
         self.message = message
+
+
+class BidError(DomainError):
+    """Teklif motoru hatalarının temel sınıfı."""
+
+    code = "BID_ERROR"
 
 
 class AuctionNotFound(BidError):
@@ -51,3 +57,26 @@ class IdempotencyConflict(BidError):
     """Aynı idempotency anahtarı farklı bir teklif için yeniden kullanıldı."""
 
     code = "IDEMPOTENCY_CONFLICT"
+
+
+# ------------------------------------------------------------ ilan ve üyelik
+class ListingError(DomainError):
+    """İlan açma hatalarının temel sınıfı."""
+
+    code = "LISTING_ERROR"
+
+
+class NoActiveSubscription(ListingError):
+    """Satıcının aktif ve süresi dolmamış bir üyeliği yok."""
+
+    code = "NO_ACTIVE_SUBSCRIPTION"
+
+
+class ListingQuotaExceeded(ListingError):
+    """Üyelik planının ilan kotası dolu."""
+
+    code = "LISTING_QUOTA_EXCEEDED"
+
+    def __init__(self, message: str, quota: int):
+        super().__init__(message)
+        self.quota = quota

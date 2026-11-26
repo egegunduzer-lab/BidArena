@@ -34,6 +34,7 @@ package "Backend (FastAPI, Python)  -  backend/" {
   package "API Katmanı  (HTTP / WebSocket)" {
     [Teklif REST Router\napp/api/bids.py] as BidsAPI
     [Listeleme Router\napp/api/auctions.py] as ListAPI
+    [İlan / Kota Router\napp/api/listings.py] as ListingAPI
     [Canlı Yayın WebSocket\napp/api/realtime.py] as WSAPI
     [İstek / Yanıt Şemaları\n(Pydantic)\napp/schemas.py] as Schemas
   }
@@ -43,6 +44,7 @@ package "Backend (FastAPI, Python)  -  backend/" {
     [BidPolicy\n(değiştirilebilir kurallar)] as Policy
     [AuctionCloser\napp/services/auction_service.py] as Closer
     [AuctionQueries\n(salt okuma)\napp/services/auction_queries.py] as Queries
+    [ListingService\n(ilan kotası)\napp/services/listing_service.py] as ListingSvc
     [İş Kuralı Hataları\napp/services/errors.py] as Errors
   }
 
@@ -72,12 +74,15 @@ database "PostgreSQL 17\n(docs/schema.sql)" as PG {
 Web --> BidsAPI : HTTP / JSON\n(Vite proxy /api)
 Web --> WSAPI : WebSocket\n(/ws/auctions/{id})
 Web --> ListAPI : GET /api/auctions
+Web ..> ListingAPI : POST /api/listings\n(satıcı paneli planlanan)
 Mobile ..> BidsAPI : HTTP / JSON
 Mobile ..> WSAPI : WebSocket
 
 ' --- API katmanı
 BidsAPI --> Schemas : girdi doğrulama
 ListAPI --> Queries : list_auctions()
+ListingAPI --> ListingSvc : create_listing()\nquota_status()
+ListingSvc --> Models : subscriptions FOR UPDATE\n(kota yarışı)
 Queries --> Models : SELECT (kilit yok)
 BidsAPI --> BidService : place_bid()\nset_auto_bid_limit()\nget_state()
 BidsAPI --> Errors : hata -> HTTP kodu

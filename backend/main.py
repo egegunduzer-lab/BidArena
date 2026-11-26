@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api import auctions, bids, realtime
+from app.api import auctions, bids, listings, realtime
 from app.core.scheduler import auction_closer_loop, closer_enabled, closer_interval
 from app.core.websocket_manager import manager
 from app.services.auction_service import AuctionCloser
@@ -33,6 +33,7 @@ app = FastAPI(
 
 app.include_router(auctions.router, prefix="/api")
 app.include_router(bids.router, prefix="/api")
+app.include_router(listings.router, prefix="/api")
 app.include_router(realtime.router)
 
 @app.get("/")

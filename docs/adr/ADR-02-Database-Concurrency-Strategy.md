@@ -42,6 +42,7 @@ Açık artırmanın son saniyelerinde çok sayıda alıcı aynı anda teklif ver
 - **Bedeli:** Aynı açık artırmaya gelen teklifler sırayla işlenir. Kilit süresi tek bir işlem kadardır (birkaç milisaniye). Otomatik teklif döngüsü kilidi tutarken çalışır; bu döngü 50 turla sınırlandırılmıştır (her turda fiyat kesin arttığı için döngü sonlanır; testlerdeki senaryolarda 1–2 tur sürer). Proje ölçeği için kabul edilebilir.
 - **Kapanışla etkileşim:** Kapanış görevi aynı satırı `FOR UPDATE SKIP LOCKED` ile kilitler; teklif işlenirken beklemez, sonraki turda dener ve bitişi kilitten sonra yeniden kontrol eder (ADR-03).
 - Redis bazlı dağıtık kilide gerek kalmaz; tek doğruluk kaynağı PostgreSQL'dir.
+- **Aynı yaklaşım ilan kotasında da kullanılır:** `ListingService` ilan açarken satıcının aktif üyelik satırını `FOR UPDATE` ile kilitler, sayım ve kayıt aynı işlemde yapılır. Kotanın son hakkı için aynı anda gelen 10 istekten yalnızca biri kabul edilir (`test_concurrent_requests_cannot_exceed_quota`; kilit kaldırılınca bu test başarısız olur).
 
 ## Doğrulama
 `backend/tests/test_bid_concurrency.py`: her teklif ayrı thread ve ayrı veritabanı bağlantısıyla gönderilir, bir `Barrier` hepsini aynı anda serbest bırakır.

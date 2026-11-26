@@ -114,6 +114,8 @@ python demo_reset.py --ends-in 180
 
 Arayüz `/api` ve `/ws` isteklerini Vite proxy'si ile `http://localhost:8000` adresine yönlendirir (`BIDARENA_BACKEND` ile değiştirilebilir). Kimlik doğrulama modülü olmadığı için kullanıcı, ekrandaki "Kullanıcı (demo)" listesinden seçilir.
 
+**İlan açma ve kota:** Satıcı `POST /api/listings` ile ilanı ve hemen başlayan açık artırmasını açar; `GET /api/sellers/me/quota` kalan ilan hakkını gösterir. Aktif ve süresi dolmamış üyelik gerekir (bireysel 20, profesyonel 200 ilan). Kota sunucuda, üyelik satırı kilitlenerek kontrol edilir; eşzamanlı isteklerde aşılamaz.
+
 ## Mimari Diyagramlar
 - [Bileşen diyagramı](docs/design/component-diagram.png) ([kaynak](docs/design/component-diagram.plantuml)): API, servis, çekirdek ve veri erişim katmanları
 - [Dağıtım diyagramı](docs/design/deployment-diagram.png) ([kaynak](docs/design/deployment-diagram.plantuml)): istemci, Uvicorn süreci, PostgreSQL ve CI

@@ -65,6 +65,36 @@ class AuctionSummary(BaseModel):
     bid_count: int
 
 
+class ListingCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=120)
+    description: str | None = Field(default=None, max_length=5000)
+    defects: str | None = Field(default=None, max_length=2000, description="Ürün kusurları")
+    category: str | None = Field(default=None, max_length=60)
+    city: str | None = Field(default=None, max_length=60)
+    district: str | None = Field(default=None, max_length=60)
+    photos: list[str] | None = Field(default=None, max_length=10, description="Fotoğraf adresleri")
+    safe_meeting_prefs: dict | None = Field(default=None, description="Güvenli buluşma tercihleri")
+    start_price: int = Field(gt=0, description="Başlangıç fiyatı (TL)")
+    min_increment: int = Field(gt=0, description="Minimum teklif artışı (TL)")
+    duration_minutes: int = Field(ge=1, le=43200, description="Açık artırma süresi (en fazla 30 gün)")
+
+
+class QuotaOut(BaseModel):
+    subscription_id: int
+    plan: str
+    quota: int
+    used: int
+    remaining: int
+    ends_at: str
+
+
+class ListingCreated(BaseModel):
+    listing_id: int
+    auction_id: int
+    end_time: str
+    quota: QuotaOut
+
+
 class ErrorResponse(BaseModel):
     code: str
     message: str

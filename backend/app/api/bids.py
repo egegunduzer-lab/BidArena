@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
+from app.api.deps import current_user_id
 from app.core.database import get_db
 from app.core.websocket_manager import manager
 from app.schemas import AuctionState, AutoBidRequest, BidRequest, BidResponse, ErrorResponse
@@ -39,10 +40,6 @@ ERROR_STATUS = {
 }
 
 ERROR_RESPONSES = {code: {"model": ErrorResponse} for code in (403, 404, 409, 422)}
-
-
-def current_user_id(x_user_id: int = Header(..., description="Geçici: teklif veren kullanıcı")) -> int:
-    return x_user_id
 
 
 def get_bid_service(db: Session = Depends(get_db)) -> BidService:
