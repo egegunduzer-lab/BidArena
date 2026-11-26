@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { placeBid, setAutoBid } from './api'
+import { newIdempotencyKey, placeBid, setAutoBid } from './api'
 import BidHistory from './BidHistory'
 import Countdown from './Countdown'
 import { userName } from './demoUsers'
@@ -8,7 +8,7 @@ import { useAuctionFeed } from './useAuctionFeed'
 const tl = (n) => `${n.toLocaleString('tr-TR')} ₺`
 
 export default function LiveAuction({ auctionId, userId }) {
-  const { auction, connected, notice, serverNow } = useAuctionFeed(auctionId)
+  const { auction, connected, notice, serverNow } = useAuctionFeed(auctionId, userId)
   const [amount, setAmount] = useState('')
   const [maxAmount, setMaxAmount] = useState('')
   const [pending, setPending] = useState(false)
@@ -30,7 +30,7 @@ export default function LiveAuction({ auctionId, userId }) {
     try {
       // Her tıklama yeni bir idempotency anahtarı alır; ağ hatasında aynı istek
       // tekrar gönderilse bile sunucu ikinci teklif açmaz.
-      const res = await placeBid(auctionId, userId, value, crypto.randomUUID())
+      const res = await placeBid(auctionId, userId, value, newIdempotencyKey())
       const auto = res.bids.find((b) => b.is_auto)
       setMessage({
         ok: true,
@@ -99,6 +99,9 @@ export default function LiveAuction({ auctionId, userId }) {
 
         {notice === 'extended' && (
           <div className="banner extended">Son dakika teklifi geldi: süre 2 dakika uzatıldı</div>
+        )}
+        {notice === 'outbid' && (
+          <div className="banner outbid">Teklifiniz geçildi! Yeni fiyat: {tl(auction.current_price)}</div>
         )}
 
         {isClosed ? (

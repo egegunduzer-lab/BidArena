@@ -8,3 +8,12 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+// PWA: service worker yalnızca derlenmiş sürümde kaydedilir (geliştirmede
+// önbellek, anlık yeniden yüklemeyi bozmasın). Tarayıcı güvenli bağlam
+// (HTTPS ya da localhost) istemediği durumda kayıt atlanır.
+if (import.meta.env.PROD && 'serviceWorker' in navigator && window.isSecureContext) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  })
+}

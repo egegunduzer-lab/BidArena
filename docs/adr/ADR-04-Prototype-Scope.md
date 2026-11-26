@@ -1,6 +1,6 @@
 # ADR-04: Prototip Kapsamı (Mobil İstemci, Kimlik Doğrulama, Paneller)
 
-**Statü:** Kabul edildi (2026-11-26)
+**Statü:** Kabul edildi (2026-11-26) · Mobil istemci PWA olarak güncellendi (2026-11-26)
 
 ## Durum (Context)
 Proje dokümanı geniş bir hedef tanımlar: Flutter ile mobil alıcı uygulaması, React/Next.js ile satıcı ve yönetici web panelleri, kayıt/giriş ve üyelik yönetimi, teslimat, yedek alıcı, uyuşmazlık ve güven modülleri (bölüm 4, 7, 9). Ekip üç kişidir ve prototip sekiz haftalıktır. Dokümanın kendisi de "sekiz haftalık prototip kapsamında ödeme ve üyelik tahsilatı simüle edilecektir" der.
@@ -13,10 +13,24 @@ Değerlendirmenin temel başarı kriteri "eşzamanlı tekliflerde tutarlı sonu�
 
 ## Karar (Decision)
 
-### 1. Alıcı istemcisi: Flutter yerine React web
-- Canlı teklif ekranı `frontend_web/` altında React + Vite ile yazılmıştır (`LiveAuction`, `useAuctionFeed`). Ekran dar ekranlarda tek sütuna düşer.
-- Backend hiçbir istemciye özel değildir: teklif REST ile (`POST /api/auctions/{id}/bids`), canlı akış WebSocket ile (`/ws/auctions/{id}`) yapılır (ADR-01). Flutter uygulaması aynı uç noktaları kullanarak **backend değişmeden** eklenebilir.
-- Gerekçe: ekipte tek bir arayüz teknolojisi, demo için tek kurulum, sürenin backend'e ayrılması.
+### 1. Mobil alıcı uygulaması: Flutter yerine PWA (React)
+Doküman bölüm 9 "canlı teklif verebilen mobil alıcı uygulaması" bekler; bölüm 7'de Flutter **önerilir**. Mobil uygulama, mevcut React istemcisinin **Progressive Web App (PWA)** olarak telefona yüklenebilir hâle getirilmesiyle karşılanmıştır.
+
+| Seçenek | Değerlendirme |
+|---|---|
+| Flutter | Yeni dil (Dart), ayrı kod tabanı, Flutter + Android SDK kurulumu. Kalan sürede canlı teklif ekranının iki kez yazılması gerekir. |
+| React Native / Capacitor | Android SDK ve paketleme gerektirir; aynı ekran yine ikinci bir derleme hattıyla çalışır. |
+| **PWA** | Tek kod tabanı; telefonda ana ekrana yüklenir, tam ekran (standalone) açılır; backend ve canlı akış aynı. **Seçildi.** |
+
+Uygulama (`frontend_web/`):
+- `public/manifest.webmanifest`: ad, `display: standalone`, tema rengi, 192/512 px ve maskable ikonlar; iOS için `apple-touch-icon` ve `apple-mobile-web-app-*` etiketleri.
+- `public/sw.js`: yalnızca uygulama kabuğunu (HTML, derlenmiş JS/CSS, ikonlar) önbelleğe alır. `/api` ve `/ws` isteklerine **hiç dokunmaz**; fiyat ve teklifler her zaman sunucudan gelir, önbellekten eski fiyat gösterilmez.
+- Telefon düzeni (600 px altı), dokunmatik hedefler, iOS'ta odaklanınca yakınlaştırmayı önleyen 16 px girişler; teklif geçildiğinde bildirim ve titreşim (`navigator.vibrate`).
+- Telefon bilgisayara yerel ağdan `http://<bilgisayar-ip>` ile bağlandığında tarayıcı güvenli bağlam saymaz ve `crypto.randomUUID` yoktur; idempotency anahtarı bu durumda `crypto.getRandomValues` ile üretilir.
+
+Sınırı: Tam "yükle" deneyimi ve service worker güvenli bağlam (HTTPS ya da `localhost`) ister. Yerel ağ üzerinden HTTP ile açıldığında uygulama mobil web olarak tam çalışır (canlı teklif, WebSocket, bildirim) ve ana ekrana kısayol olarak eklenebilir; service worker yalnızca HTTPS ile yayınlandığında devreye girer.
+
+Backend hiçbir istemciye özel değildir: teklif REST ile (`POST /api/auctions/{id}/bids`), canlı akış WebSocket ile (`/ws/auctions/{id}`) yapılır (ADR-01). İleride bir Flutter uygulaması aynı uç noktaları kullanarak **backend değişmeden** eklenebilir.
 
 ### 2. Kimlik doğrulama: geçici `X-User-Id` başlığı
 - Kayıt/giriş yoktur. İşlemi yapan kullanıcı `X-User-Id` başlığıyla belirtilir; demo ekranında seed kullanıcılarından biri seçilir.
@@ -39,6 +53,7 @@ Değerlendirmenin temel başarı kriteri "eşzamanlı tekliflerde tutarlı sonu�
 | Doküman | Durum | Kanıt |
 |---|---|---|
 | 4-C Teklif motoru (WebSocket, minimum artış, sunucu saatiyle kapanış, anti-sniping, otomatik teklif, idempotency) | Tamam | `bid_service.py`, `test_bid_service.py`, `test_bid_concurrency.py` |
+| Bölüm 9: canlı teklif verebilen mobil alıcı uygulaması | Tamam (PWA) | `manifest.webmanifest`, `sw.js`, `LiveAuction.jsx` |
 | 4-D Koşullu kazanan ve randevu taslağı | Tamam | `auction_service.py`, `test_auction_close.py` |
 | 4-A İlan kotasının sunucuda kontrolü | Tamam | `listing_service.py`, `test_listing_quota.py` |
 | 4-B İlan açma, açık artırma listesi | Kısmen (filtre ve takip listesi yok) | `POST /api/listings`, `GET /api/auctions` |
@@ -53,4 +68,5 @@ Senaryo 2 (randevu onayı, tek kullanımlık kod, iki taraflı teslim onayı) ve
 - Sunumda dokümanın temel başarı kriteri (eşzamanlılıkta tutarlılık) çalışan kod ve testlerle gösterilebilir.
 - Backend'in istemciden bağımsız olması, Flutter ve panellerin sonradan eklenmesini backend değişikliği gerektirmeden mümkün kılar.
 - Kimlik doğrulamanın tek noktada soyutlanması, giriş sistemi eklendiğinde değişikliği tek dosyayla sınırlar.
-- Bedeli: dokümandaki mobil uygulama, paneller ve giriş sistemi prototipte yoktur; demo web üzerinden ve seçilen demo kullanıcılarıyla yapılır.
+- Mobil alıcı deneyimi, ayrı bir kod tabanı açmadan telefonda gösterilebilir; web ve mobil aynı kodu ve aynı canlı akışı kullanır.
+- Bedeli: yerel uygulama (Flutter) mağazadan dağıtılamaz; satıcı/yönetici panelleri ve giriş sistemi prototipte yoktur; demo seçilen demo kullanıcılarıyla yapılır.

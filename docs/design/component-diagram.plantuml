@@ -26,7 +26,7 @@ title BidArena - Bileşen Diyagramı (Katmanlı Mimari)
 
 package "İstemciler" {
   [Web Arayüzü (React + Vite)\nLiveAuction, useAuctionFeed\nfrontend_web/src/] as Web
-  [Mobil Alıcı Uygulaması\n(Flutter)] <<planlanan>> as Mobile
+  [Mobil Alıcı Uygulaması (PWA)\nmanifest + service worker\naynı React kodu] as Mobile
 }
 
 package "Backend (FastAPI, Python)  -  backend/" {
@@ -75,8 +75,8 @@ Web --> BidsAPI : HTTP / JSON\n(Vite proxy /api)
 Web --> WSAPI : WebSocket\n(/ws/auctions/{id})
 Web --> ListAPI : GET /api/auctions
 Web ..> ListingAPI : POST /api/listings\n(satıcı paneli planlanan)
-Mobile ..> BidsAPI : HTTP / JSON
-Mobile ..> WSAPI : WebSocket
+Mobile --> BidsAPI : HTTP / JSON
+Mobile --> WSAPI : WebSocket
 
 ' --- API katmanı
 BidsAPI --> Schemas : girdi doğrulama

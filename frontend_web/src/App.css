@@ -276,6 +276,77 @@ button:disabled {
   color: #fff;
 }
 
+.banner.outbid {
+  background: #ffe1e1;
+  color: var(--red-dark);
+}
+
+/* ---------------------------------------------------------- telefon */
+@media (max-width: 600px) {
+  .app {
+    padding: max(12px, env(safe-area-inset-top)) 12px max(24px, env(safe-area-inset-bottom));
+  }
+
+  .app-header h1 {
+    font-size: 1.35rem;
+    margin-bottom: 12px;
+  }
+
+  .controls {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .controls select {
+    min-width: 0;
+    width: 100%;
+    font-size: 16px; /* iOS'ta odaklanınca yakınlaştırmayı engeller */
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .product-title {
+    font-size: 1.3rem;
+  }
+
+  .price,
+  .countdown {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .price-value {
+    font-size: 1.8rem;
+  }
+
+  .countdown-value {
+    font-size: 1.6rem;
+  }
+
+  .bid-form,
+  .auto-form {
+    flex-direction: column;
+  }
+
+  .bid-form input,
+  .auto-form input {
+    font-size: 16px;
+  }
+
+  .bid-button {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .history-list {
+    max-height: 320px;
+  }
+}
+
 .rules {
   border-top: 1px solid #c4c4c4;
   padding-top: 10px;

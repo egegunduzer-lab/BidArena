@@ -14,11 +14,14 @@ const PING_MS = 25000
  * Geri sayım istemci saatine değil sunucu saatine göre yapılır:
  * her mesajdaki server_time ile yerel saat arasındaki fark saklanır.
  */
-export function useAuctionFeed(auctionId) {
+export function useAuctionFeed(auctionId, userId) {
   const [auction, setAuction] = useState(null)
   const [connected, setConnected] = useState(false)
   const [notice, setNotice] = useState(null)
   const clockOffset = useRef(0)
+  const leaderRef = useRef(null) // "teklifiniz geçildi" tespiti için önceki lider
+  // Kullanıcı değişince ekran yeniden kurulur (App'teki key), bu yüzden sabit.
+  const userRef = useRef(userId)
 
   useEffect(() => {
     if (!auctionId) return undefined
@@ -42,10 +45,16 @@ export function useAuctionFeed(auctionId) {
       switch (msg.event) {
         case 'SNAPSHOT':
           syncClock(msg.server_time)
+          leaderRef.current = msg.highest_bidder_id
           setAuction(msg)
           break
         case 'NEW_BID':
           syncClock(msg.server_time)
+          if (leaderRef.current === userRef.current && msg.highest_bidder_id !== userRef.current) {
+            showNotice('outbid')
+            navigator.vibrate?.([120, 60, 120]) // telefonda titreşim
+          }
+          leaderRef.current = msg.highest_bidder_id
           setAuction((prev) =>
             prev && {
               ...prev,

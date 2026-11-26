@@ -1,6 +1,6 @@
 @startuml Deployment Diagram - BidArena
 ' BidArena dağıtım diyagramı: prototipin gerçekte nasıl çalıştığı.
-' <<planlanan>> işaretli düğümler henüz yoktur.
+' Telefon, aynı React istemcisini PWA olarak çalıştırır (ADR-04).
 
 skinparam shadowing false
 skinparam defaultFontName Arial
@@ -24,8 +24,8 @@ node "Kullanıcı Cihazı (PC / Telefon)" <<device>> {
   node "Web Tarayıcısı" <<execution environment>> {
     artifact "BidArena Web Arayüzü\n(React SPA, Vite build)" as WebApp
   }
-  node "Android / iOS" <<execution environment>> <<planlanan>> {
-    artifact "BidArena Mobil\n(Flutter APK / IPA)" as MobileApp
+  node "Telefon tarayıcısı (Android / iOS)" <<execution environment>> {
+    artifact "BidArena PWA\n(ana ekrana yüklenir,\nservice worker + manifest)" as MobileApp
   }
 }
 

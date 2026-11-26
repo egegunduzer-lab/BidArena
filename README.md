@@ -114,6 +114,16 @@ python demo_reset.py --ends-in 180
 
 Arayüz `/api` ve `/ws` isteklerini Vite proxy'si ile `http://localhost:8000` adresine yönlendirir (`BIDARENA_BACKEND` ile değiştirilebilir). Kimlik doğrulama modülü olmadığı için kullanıcı, ekrandaki "Kullanıcı (demo)" listesinden seçilir.
 
+### Telefondan (mobil uygulama / PWA)
+
+Arayüz telefona uygulama olarak yüklenebilir (ana ekran ikonu, tam ekran). Telefon ve bilgisayar **aynı Wi-Fi'de** olmalı:
+1. Backend çalışırken `frontend_web` klasöründe: `npm run mobile` (derler ve yerel ağda yayınlar)
+2. Terminalde görünen `Network: http://<bilgisayar-ip>:4173` adresini telefonda açın, ör. `http://192.168.1.20:4173/?auction=1&user=6`
+3. Tarayıcı menüsünden "Ana ekrana ekle"
+4. Bilgisayarda başka bir kullanıcıyla teklif verin; telefondaki ekran anında güncellenir, teklifiniz geçilirse bildirim ve titreşim gelir.
+
+Windows ilk seferde Node.js için güvenlik duvarı izni sorabilir; "Özel ağlar"a izin verin. Okul ağı cihazlar arası bağlantıyı engellerse telefonun kişisel erişim noktası kullanılabilir.
+
 **İlan açma ve kota:** Satıcı `POST /api/listings` ile ilanı ve hemen başlayan açık artırmasını açar; `GET /api/sellers/me/quota` kalan ilan hakkını gösterir. Aktif ve süresi dolmamış üyelik gerekir (bireysel 20, profesyonel 200 ilan). Kota sunucuda, üyelik satırı kilitlenerek kontrol edilir; eşzamanlı isteklerde aşılamaz.
 
 ## Mimari Diyagramlar
@@ -131,6 +141,6 @@ ADR-02: Eşzamanlı teklif çakışmalarını (race condition) önlemek için a�
 
 ADR-03: Açık artırma kapanışı, uygulama içinde periyodik çalışan bir arka plan göreviyle yapılır; satır `FOR UPDATE SKIP LOCKED` ile kilitlenir ve bitiş zamanı kilit alındıktan sonra yeniden kontrol edilir.
 
-ADR-04: Prototip kapsamı. Alıcı istemcisi Flutter yerine React web'dedir (backend istemciden bağımsız); kimlik doğrulama yerine geçici `X-User-Id` başlığı tek noktada (`app/api/deps.py`) okunur; satıcı/yönetici panelleri ve gerçek tahsilat prototip dışındadır.
+ADR-04: Prototip kapsamı. Mobil alıcı uygulaması Flutter yerine PWA olarak (telefona yüklenebilir React istemcisi) karşılanır, backend istemciden bağımsızdır; kimlik doğrulama yerine geçici `X-User-Id` başlığı tek noktada (`app/api/deps.py`) okunur; satıcı/yönetici panelleri ve gerçek tahsilat prototip dışındadır.
 
 

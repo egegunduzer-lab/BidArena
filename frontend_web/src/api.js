@@ -18,6 +18,20 @@ async function request(path, options = {}) {
 
 export const listAuctions = () => request('/auctions')
 
+/**
+ * Her teklif için benzersiz idempotency anahtarı.
+ * crypto.randomUUID yalnızca güvenli bağlamda (HTTPS / localhost) vardır;
+ * telefon yerel ağdan http://192.168.x.x ile bağlandığında yedek üretici kullanılır.
+ */
+export function newIdempotencyKey() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes) // güvenli olmayan bağlamda da kullanılabilir
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
 export function placeBid(auctionId, userId, amount, idempotencyKey) {
   return request(`/auctions/${auctionId}/bids`, {
     method: 'POST',
