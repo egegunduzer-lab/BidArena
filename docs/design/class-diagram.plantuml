@@ -73,17 +73,108 @@ class Appointment {
   + string status
 }
 
+class Subscription {
+    + int id
+    + int user_id
+    + string plan_type
+    + datetime expires_at
+}
+
+class Watchlist {
+    + int id
+    + int user_id
+    + int auction_id
+}
+
+class AutoBidLimit {
+    + int id
+    + int user_id
+    + float max_limit
+}
+
+class DeliveryConfirmation {
+    + int id
+    + int auction_id
+    + boolean is_delivered
+}
+
+class Dispute {
+    + int id
+    + int auction_id
+    + string reason
+    + string status
+}
+
+class Evidence {
+    + int id
+    + int dispute_id
+    + string file_url
+}
+
+class TrustEvent {
+    + int id
+    + int user_id
+    + string event_type
+    + float weight
+}
+
+class BackupOffer {
+    + int id
+    + int auction_id
+    + float amount
+}
+
+class Notification {
+    + int id
+    + int user_id
+    + string message
+    + boolean is_read
+}
+
+class AuditLog {
+    + int id
+    + string action
+    + datetime timestamp
+}
+
+class BidService {
+    + place_bid(user_id: int, auction_id: int, amount: float)
+    + validate_bid()
+}
+
+class BidPolicy {
+    + check_rules()
+    + calculate_min_increment()
+}
+
+class AuctionCloser {
+    + close_expired_auctions()
+    + determine_winner()
+}
+
+class AuctionQueries {
+    + get_active_auctions()
+    + search_auctions()
+}
+
+class ConnectionManager {
+    + active_connections: list
+    + connect(websocket)
+    + disconnect(websocket)
+    + broadcast(message: string)
+}
+
 ' Strategy Design Pattern Sınıfları
 interface ITrustScoreStrategy {
-  + calculateScore(userId: int): float
+  + calculate_score(userId: int): float
 }
 
 class BuyerTrustStrategy {
-  + calculateScore(userId: int): float
+  + calculate_score(userId: int): float
 }
 
 class SellerTrustStrategy {
-  + calculateScore(userId: int): float
+  + calculate_score(userId: int): float
 }
 
 ' İlişkiler (Associations & Realization)
