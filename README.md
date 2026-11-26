@@ -131,4 +131,6 @@ ADR-02: Eşzamanlı teklif çakışmalarını (race condition) önlemek için a�
 
 ADR-03: Açık artırma kapanışı, uygulama içinde periyodik çalışan bir arka plan göreviyle yapılır; satır `FOR UPDATE SKIP LOCKED` ile kilitlenir ve bitiş zamanı kilit alındıktan sonra yeniden kontrol edilir.
 
+ADR-04: Prototip kapsamı. Alıcı istemcisi Flutter yerine React web'dedir (backend istemciden bağımsız); kimlik doğrulama yerine geçici `X-User-Id` başlığı tek noktada (`app/api/deps.py`) okunur; satıcı/yönetici panelleri ve gerçek tahsilat prototip dışındadır.
+
 
