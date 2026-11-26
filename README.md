@@ -90,6 +90,30 @@ Windows PowerShell'de: `$env:TEST_DATABASE_URL="postgresql+psycopg2://localhost:
 
 **Sürekli Entegrasyon (CI):** `main`'e her push'ta ve her pull request'te GitHub Actions ([backend-tests.yml](.github/workflows/backend-tests.yml)) PostgreSQL 17 açar, şemayı ve örnek veriyi yükler, `check_db.py` ile model/şema uyumunu doğrular ve tüm testleri çalıştırır. Sonuçlar [Actions](https://github.com/egegunduzer-lab/BidArena/actions) sekmesinde görülür; JUnit raporu her çalıştırmada artifact olarak indirilebilir.
 
+## Uçtan Uca Demo (Canlı Teklif Ekranı)
+
+Web arayüzü (`frontend_web`) backend'e bağlıdır: ürün bilgisi, güncel fiyat, sunucu saatine göre geri sayım, teklif geçmişi, otomatik teklif limiti, son dakika uzatması ve kapanış canlı görünür.
+
+**1. Demo verisini sıfırlayın** (`backend` klasöründe; açık artırma 1, 3 dakika sonra bitecek şekilde):
+```bash
+python demo_reset.py --ends-in 180
+```
+**2. Backend'i başlatın** (`backend` klasöründe): `uvicorn main:app --reload`
+
+**3. Arayüzü başlatın** (`frontend_web` klasöründe): `npm install` (ilk sefer), sonra `npm run dev`
+
+**4. İki sekme açın** (farklı kullanıcılar):
+- http://localhost:5173/?auction=1&user=5 (Mehmet)
+- http://localhost:5173/?auction=1&user=6 (Elif)
+
+Önerilen akış:
+1. Mehmet minimum teklifi verir; Can'in otomatik limiti anında karşılık verir. Elif'in ekranı yenilemeden güncellenir.
+2. Elif düşük bir tutar dener; sunucu "Teklif en az ... TL olmalı" hatasını döner (kurallar sunucuda).
+3. Son 2 dakikada Elif 13.250 TL verir; süre 2 dakika uzar, iki ekranda da bildirim çıkar.
+4. Süre dolunca iki ekranda da kazanan ve "buluşma randevusu taslağı açıldı" görünür.
+
+Arayüz `/api` ve `/ws` isteklerini Vite proxy'si ile `http://localhost:8000` adresine yönlendirir (`BIDARENA_BACKEND` ile değiştirilebilir). Kimlik doğrulama modülü olmadığı için kullanıcı, ekrandaki "Kullanıcı (demo)" listesinden seçilir.
+
 ## Mimari Diyagramlar
 - [Bileşen diyagramı](docs/design/component-diagram.png) ([kaynak](docs/design/component-diagram.plantuml)): API, servis, çekirdek ve veri erişim katmanları
 - [Dağıtım diyagramı](docs/design/deployment-diagram.png) ([kaynak](docs/design/deployment-diagram.plantuml)): istemci, Uvicorn süreci, PostgreSQL ve CI

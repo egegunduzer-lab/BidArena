@@ -25,7 +25,7 @@ top to bottom direction
 title BidArena - Bileşen Diyagramı (Katmanlı Mimari)
 
 package "İstemciler" {
-  [Web Arayüzü\n(React + Vite)\nfrontend_web/] as Web
+  [Web Arayüzü (React + Vite)\nLiveAuction, useAuctionFeed\nfrontend_web/src/] as Web
   [Mobil Alıcı Uygulaması\n(Flutter)] <<planlanan>> as Mobile
 }
 
@@ -33,6 +33,7 @@ package "Backend (FastAPI, Python)  -  backend/" {
 
   package "API Katmanı  (HTTP / WebSocket)" {
     [Teklif REST Router\napp/api/bids.py] as BidsAPI
+    [Listeleme Router\napp/api/auctions.py] as ListAPI
     [Canlı Yayın WebSocket\napp/api/realtime.py] as WSAPI
     [İstek / Yanıt Şemaları\n(Pydantic)\napp/schemas.py] as Schemas
   }
@@ -41,6 +42,7 @@ package "Backend (FastAPI, Python)  -  backend/" {
     [BidService\napp/services/bid_service.py] as BidService
     [BidPolicy\n(değiştirilebilir kurallar)] as Policy
     [AuctionCloser\napp/services/auction_service.py] as Closer
+    [AuctionQueries\n(salt okuma)\napp/services/auction_queries.py] as Queries
     [İş Kuralı Hataları\napp/services/errors.py] as Errors
   }
 
@@ -67,13 +69,16 @@ database "PostgreSQL 17\n(docs/schema.sql)" as PG {
 }
 
 ' --- İstemci -> API
-Web ..> BidsAPI : HTTP / JSON\n(planlanan bağlantı)
-Web ..> WSAPI : WebSocket\n(planlanan bağlantı)
+Web --> BidsAPI : HTTP / JSON\n(Vite proxy /api)
+Web --> WSAPI : WebSocket\n(/ws/auctions/{id})
+Web --> ListAPI : GET /api/auctions
 Mobile ..> BidsAPI : HTTP / JSON
 Mobile ..> WSAPI : WebSocket
 
 ' --- API katmanı
 BidsAPI --> Schemas : girdi doğrulama
+ListAPI --> Queries : list_auctions()
+Queries --> Models : SELECT (kilit yok)
 BidsAPI --> BidService : place_bid()\nset_auto_bid_limit()\nget_state()
 BidsAPI --> Errors : hata -> HTTP kodu
 BidsAPI --> WSManager : commit sonrası\nNEW_BID yayını

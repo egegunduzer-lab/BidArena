@@ -212,6 +212,18 @@ class BidService:
         state["status"] = auction.status
         state["start_price"] = auction.start_price
         state["min_increment"] = auction.min_increment
+        state["winner_id"] = auction.winner_id
+        listing = auction.listing
+        state["listing"] = {
+            "id": listing.id,
+            "title": listing.title,
+            "description": listing.description,
+            "defects": listing.defects,
+            "category": listing.category,
+            "city": listing.city,
+            "district": listing.district,
+            "seller_id": listing.seller_id,
+        }
         return state
 
     # ------------------------------------------------------------ kurallar

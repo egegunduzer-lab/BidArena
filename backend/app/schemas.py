@@ -30,6 +30,17 @@ class BidResponse(BaseModel):
     bids: list[PlacedBidOut]
 
 
+class ListingInfo(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    defects: str | None
+    category: str | None
+    city: str | None
+    district: str | None
+    seller_id: int
+
+
 class AuctionState(BaseModel):
     auction_id: int
     status: str
@@ -38,9 +49,20 @@ class AuctionState(BaseModel):
     current_price: int
     min_next_bid: int
     highest_bidder_id: int | None
+    winner_id: int | None
     end_time: str
     server_time: str
+    listing: ListingInfo
     bids: list[PlacedBidOut]
+
+
+class AuctionSummary(BaseModel):
+    auction_id: int
+    title: str
+    status: str
+    current_price: int
+    end_time: str
+    bid_count: int
 
 
 class ErrorResponse(BaseModel):

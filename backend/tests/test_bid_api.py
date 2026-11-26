@@ -78,6 +78,25 @@ def test_get_auction_state(client):
     assert "server_time" in body
 
 
+def test_auction_state_includes_listing_info(client):
+    body = client.get(f"/api/auctions/{LIVE_AUCTION}").json()
+    assert body["listing"]["title"] == "Trek Marlin 7 Dağ Bisikleti"
+    assert body["listing"]["defects"] == "Sağ vites kolunda çizik."
+    assert body["listing"]["seller_id"] == 2
+    assert body["winner_id"] is None
+
+
+def test_list_auctions_live_first(client):
+    r = client.get("/api/auctions")
+    assert r.status_code == 200
+    rows = r.json()
+    assert len(rows) == 5
+    assert rows[0]["auction_id"] == LIVE_AUCTION
+    assert rows[0]["status"] == "ACTIVE"
+    assert rows[0]["bid_count"] == 4
+    assert [row["status"] for row in rows] == ["ACTIVE", "SCHEDULED", "CLOSED", "CLOSED", "CLOSED"]
+
+
 def test_auto_bid_endpoint(client):
     r = client.put(
         f"/api/auctions/{LIVE_AUCTION}/auto-bid",
