@@ -246,11 +246,19 @@ package "Güven Skoru (Strategy Pattern)" {
   class SellerTrustStrategy {
     + calculate_score(trust_events: list) : float
   }
+    class TrustScoreService {
+    - db : Session
+    + __init__(db: Session)
+    + calculate_score(user_id: int, party: str) : float
+  }
 }
 
 ITrustScoreStrategy <|.. BuyerTrustStrategy
 ITrustScoreStrategy <|.. SellerTrustStrategy
 TrustEvent "0..*" <.. ITrustScoreStrategy : kullanır
+TrustScoreService ..> BuyerTrustStrategy : seçer
+TrustScoreService ..> SellerTrustStrategy : seçer
+TrustScoreService ..> TrustEvent : okur
 ' ---------------- Teklif Servisi ----------------
 package "Teklif (bid_service.py)" {
   class BidPolicy {
