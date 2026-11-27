@@ -1,190 +1,346 @@
-@startuml
+@startuml BidArena_Class_Diagram
 skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide circle
 
-class User {
-  + int id
-  + string email
-  + string passwordHash
-  + string fullName
-  + string phone
-  + string role
-  + boolean isVerified
-  + DateTime createdAt
+title BidArena - Sınıf Diyagramı
+
+package "Kullanıcılar" {
+  class User <<table: users>> {
+    + id : int <<PK>>
+    + email : str <<unique>>
+    + password_hash : str
+    + full_name : str
+    + phone : str
+    + role : str  ' USER | ADMIN
+    + is_verified : bool
+    + restricted_until : datetime
+    + restriction_reason : str
+    + created_at : datetime
+  }
+
+  class Subscription <<table: subscriptions>> {
+    + id : int <<PK>>
+    + user_id : int <<FK>>
+    + plan : str  ' INDIVIDUAL | PROFESSIONAL
+    + listing_quota : int
+    + price_tl : int
+    + status : str  ' ACTIVE | EXPIRED | CANCELLED
+    + starts_at : datetime
+    + ends_at : datetime
+    + payment_ref : str
+  }
 }
 
-class Subscription {
-  + int id
-  + int userId
-  + string plan
-  + int listingQuota
-  + string status
-  + DateTime startsAt
-  + DateTime endsAt
+package "İlanlar" {
+  class Listing <<table: listings>> {
+    + id : int <<PK>>
+    + seller_id : int <<FK>>
+    + subscription_id : int <<FK>>
+    + title : str
+    + description : text
+    + defects : text
+    + category : str
+    + city : str
+    + district : str
+    + photos : JSONB
+    + safe_meeting_prefs : JSONB
+    + status : str  ' DRAFT | ACTIVE | CLOSED | CANCELLED
+    + created_at : datetime
+  }
+
+  class Watchlist <<table: watchlist>> {
+    + user_id : int <<PK, FK>>
+    + listing_id : int <<PK, FK>>
+    + created_at : datetime
+  }
 }
 
-class Listing {
-  + int id
-  + int sellerId
-  + string title
-  + string description
-  + string defects
-  + string category
-  + string city
-  + string district
-  + string status
-  + DateTime createdAt
+package "Açık Artırma" {
+  class Auction <<table: auctions>> {
+    + id : int <<PK>>
+    + listing_id : int <<FK>>
+    + start_price : int
+    + min_increment : int
+    + current_price : int
+    + highest_bid_id : int <<FK, DEFERRED>>
+    + start_time : datetime
+    + end_time : datetime
+    + extension_count : int
+    + extension_window_sec : int
+    + extension_sec : int
+    + status : str  ' SCHEDULED | ACTIVE | CLOSED
+    + winner_id : int <<FK>>
+  }
+
+  class Bid <<table: bids>> {
+    + id : int <<PK>>
+    + auction_id : int <<FK>>
+    + bidder_id : int <<FK>>
+    + amount : int
+    + is_auto : bool
+    + idempotency_key : str
+    + created_at : datetime
+  }
+
+  class AutoBidLimit <<table: auto_bid_limits>> {
+    + id : int <<PK>>
+    + auction_id : int <<FK>>
+    + user_id : int <<FK>>
+    + max_amount : int
+    + is_active : bool
+    + created_at : datetime
+  }
+
+  class BackupOffer <<table: backup_offers>> {
+    + id : int <<PK>>
+    + auction_id : int <<FK>>
+    + user_id : int <<FK>>
+    + bid_id : int <<FK>>
+    + price : int
+    + rank : int
+    + status : str  ' PENDING | ACCEPTED | REJECTED | EXPIRED
+    + expires_at : datetime
+    + created_at : datetime
+    + responded_at : datetime
+  }
 }
 
-class Auction {
-  + int id
-  + int listingId
-  + int startPrice
-  + int minIncrement
-  + int currentPrice
-  + int highestBidId
-  + DateTime startTime
-  + DateTime endTime
-  + int extensionCount
-  + string status
-  + int winnerId
+package "Buluşma ve Teslim" {
+  class Appointment <<table: appointments>> {
+    + id : int <<PK>>
+    + auction_id : int <<FK>>
+    + buyer_id : int <<FK>>
+    + seller_id : int <<FK>>
+    + agreed_price : int
+    + location : str
+    + meeting_time : datetime
+    + buyer_accepted : bool
+    + seller_accepted : bool
+    + otp_hash : str
+    + otp_expires_at : datetime
+    + otp_used_at : datetime
+    + otp_failed_attempts : int
+    + status : str
+    + created_at : datetime
+  }
+
+  class DeliveryConfirmation <<table: delivery_confirmations>> {
+    + id : int <<PK>>
+    + appointment_id : int <<FK>>
+    + user_id : int <<FK>>
+    + party : str  ' BUYER | SELLER
+    + confirmed_at : datetime
+  }
 }
 
-class Bid {
-  + int id
-  + int auctionId
-  + int bidderId
-  + int amount
-  + boolean isAuto
-  + string idempotencyKey
-  + DateTime createdAt
+package "Uyuşmazlık ve Güven" {
+  class Dispute <<table: disputes>> {
+    + id : int <<PK>>
+    + appointment_id : int <<FK>>
+    + opened_by : int <<FK>>
+    + against_user_id : int <<FK>>
+    + type : str  ' NO_SHOW | ITEM_MISMATCH | OTHER
+    + description : text
+    + status : str
+    + resolution_note : text
+    + resolved_by : int <<FK>>
+    + appeal_note : text
+    + created_at : datetime
+    + resolved_at : datetime
+  }
+
+  class Evidence <<table: evidence>> {
+    + id : int <<PK>>
+    + dispute_id : int <<FK>>
+    + uploaded_by : int <<FK>>
+    + file_url : str
+    + note : text
+    + created_at : datetime
+  }
+
+  class TrustEvent <<table: trust_events>> {
+    + id : int <<PK>>
+    + user_id : int <<FK>>
+    + party : str  ' BUYER | SELLER
+    + type : str  ' SALE_COMPLETED | NO_SHOW | ITEM_MISMATCH
+    + points : int
+    + verified : bool
+    + appointment_id : int <<FK>>
+    + dispute_id : int <<FK>>
+    + created_at : datetime
+  }
 }
 
-class Appointment {
-  + int id
-  + int auctionId
-  + int buyerId
-  + int sellerId
-  + int agreedPrice
-  + string location
-  + DateTime meetingTime
-  + boolean buyerAccepted
-  + boolean sellerAccepted
-  + string otpHash
-  + string status
+package "Bildirim ve Denetim" {
+  class Notification <<table: notifications>> {
+    + id : int <<PK>>
+    + user_id : int <<FK>>
+    + type : str
+    + payload : JSONB
+    + is_read : bool
+    + created_at : datetime
+  }
+
+  class AuditLog <<table: audit_logs>> {
+    + id : int <<PK>>
+    + actor_id : int <<FK>>  ' NULL = sistem
+    + action : str
+    + entity : str
+    + entity_id : int
+    + data : JSONB
+    + created_at : datetime
+  }
 }
 
-class Subscription {
-    + int id
-    + int user_id
-    + string plan_type
-    + datetime expires_at
-}
+' ---------------- İlişkiler ----------------
+User "1" -- "0..*" Subscription : sahip
+User "1" -- "0..*" Listing : satıcı
+Subscription "1" -- "0..*" Listing : kota
 
-class Watchlist {
-    + int id
-    + int user_id
-    + int auction_id
-}
+User "1" *-- "0..*" Watchlist
+Listing "1" *-- "0..*" Watchlist
 
-class AutoBidLimit {
-    + int id
-    + int user_id
-    + float max_limit
-}
+Listing "1" -- "0..*" Auction
+Auction "1" -- "0..*" Bid : teklifler
+Auction "0..1" --> "0..1" Bid : highest_bid
+User "1" -- "0..*" Bid : teklif veren
+Auction "0..*" --> "0..1" User : winner
 
-class DeliveryConfirmation {
-    + int id
-    + int auction_id
-    + boolean is_delivered
-}
+Auction "1" -- "0..*" AutoBidLimit
+User "1" -- "0..*" AutoBidLimit
 
-class Dispute {
-    + int id
-    + int auction_id
-    + string reason
-    + string status
-}
+Auction "1" -- "0..*" BackupOffer
+User "1" -- "0..*" BackupOffer
+Bid "1" -- "0..*" BackupOffer
 
-class Evidence {
-    + int id
-    + int dispute_id
-    + string file_url
-}
+Auction "1" -- "0..*" Appointment
+User "1" -- "0..*" Appointment : buyer
+User "1" -- "0..*" Appointment : seller
 
-class TrustEvent {
-    + int id
-    + int user_id
-    + string event_type
-    + float weight
-}
+Appointment "1" -- "0..*" DeliveryConfirmation
+User "1" -- "0..*" DeliveryConfirmation
 
-class BackupOffer {
-    + int id
-    + int auction_id
-    + float amount
-}
+Appointment "1" -- "0..*" Dispute
+User "1" -- "0..*" Dispute : opened_by / against / resolved_by
+Dispute "1" *-- "0..*" Evidence : CASCADE
+User "1" -- "0..*" Evidence : uploaded_by
 
-class Notification {
-    + int id
-    + int user_id
-    + string message
-    + boolean is_read
-}
+User "1" -- "0..*" TrustEvent
+Appointment "0..1" -- "0..*" TrustEvent
+Dispute "0..1" -- "0..*" TrustEvent
 
-class AuditLog {
-    + int id
-    + string action
-    + datetime timestamp
-}
+User "1" *-- "0..*" Notification : CASCADE
+User "0..1" -- "0..*" AuditLog : actor
 
-class BidService {
-    + place_bid(user_id: int, auction_id: int, amount: float)
-    + validate_bid()
-}
+' ---------------- Servis katmanı ----------------
+package "Güven Skoru (Strategy Pattern)" {
+  interface ITrustScoreStrategy <<abstract>> {
+    + {abstract} calculate_score(trust_events: list) : float
+  }
 
-class BidPolicy {
-    + check_rules()
-    + calculate_min_increment()
-}
+  class BuyerTrustStrategy {
+    + calculate_score(trust_events: list) : float
+  }
 
-class AuctionCloser {
-    + close_expired_auctions()
-    + determine_winner()
+  class SellerTrustStrategy {
+    + calculate_score(trust_events: list) : float
+  }
 }
-
-class AuctionQueries {
-    + get_active_auctions()
-    + search_auctions()
-}
-
-class ConnectionManager {
-    + active_connections: list
-    + connect(websocket)
-    + disconnect(websocket)
-    + broadcast(message: string)
-}
-
-' Strategy Design Pattern Sınıfları
-interface ITrustScoreStrategy {
-  + calculate_score(userId: int): float
-}
-
-class BuyerTrustStrategy {
-  + calculate_score(userId: int): float
-}
-
-class SellerTrustStrategy {
-  + calculate_score(userId: int): float
-}
-
-' İlişkiler (Associations & Realization)
-User "1" --> "0..*" Listing : creates >
-User "1" --> "0..*" Subscription : has >
-Listing "1" --> "1" Auction : opens >
-Auction "1" --> "0..*" Bid : receives >
-Auction "1" --> "0..1" Appointment : results in >
 
 ITrustScoreStrategy <|.. BuyerTrustStrategy
 ITrustScoreStrategy <|.. SellerTrustStrategy
+TrustEvent "0..*" <.. ITrustScoreStrategy : kullanır
+' ---------------- Teklif Servisi ----------------
+package "Teklif (bid_service.py)" {
+  class BidPolicy {
+    + unverified_max_bid : int = 20_000
+  }
+
+    class BidService {
+    - db : Session
+    - policy : BidPolicy
+    + __init__(db: Session, policy: BidPolicy | None = None)
+    + place_bid(auction_id: int, bidder_id: int, amount: int, idempotency_key: str) : BidOutcome
+    + set_auto_bid_limit(auction_id: int, user_id: int, max_amount: int) : BidOutcome
+    + get_state(auction_id: int, history: int = 20) : dict
+    - _lock_auction(auction_id: int) : Auction
+    - _server_now() : datetime
+    - _ensure_active(auction: Auction, now: datetime) : None
+    - _get_user(user_id: int) : User
+    - _ensure_can_bid(user: User, auction: Auction, amount: int, now: datetime) : None
+    - _min_next_bid(auction: Auction) : int
+    - _leader_id(auction: Auction) : int | None
+    - _record_bid(auction: Auction, bidder_id: int, amount: int, is_auto: bool, key: str, now: datetime) : PlacedBid
+    - _resolve_auto_bids(auction: Auction, now: datetime) : list[PlacedBid]
+    - _maybe_extend(auction: Auction, now: datetime) : bool
+    - _notify_outbid(auction: Auction, previous_leader: int | None, placed: list[PlacedBid]) : None
+    - _outcome(auction: Auction, now: datetime, *, extended: bool = False, duplicate: bool = False, bids: list[PlacedBid] | None = None) : BidOutcome
+    - {static} _to_placed(bid: Bid) : PlacedBid
+  }
+
+
+  class PlacedBid {
+    + to_dict() : dict
+  }
+
+  class BidOutcome {
+    + to_event() : dict
+    + to_response() : dict
+  }
+}
+
+' ---------------- Açık Artırma Servisi ----------------
+package "Açık Artırma (auction_service.py, auction_queries.py)" {
+  class AuctionCloser {
+    + __init__(session_factory: Callable[[], Session] = SessionLocal)
+    + run_once() : CloserRun
+    + start_due_auctions() : list[int]
+    + close_auction(auction_id: int) : ClosedAuction | None
+    - _expired_auction_ids() : list[int]
+    - _close(db: Session, auction: Auction, now: datetime) : ClosedAuction
+    - _notify(db: Session, auction: Auction, seller_id: int, winner_id: int | None, appointment: Appointment | None) : None
+    }
+  class ClosedAuction {
+    + to_event() : dict
+  }
+
+  class CloserRun {
+  }
+
+  class AuctionQueries {
+    + __init__(db: Session)
+    + list_auctions() : list[dict]
+  }
+}
+
+' ---------------- Gerçek Zamanlı ----------------
+package "Gerçek Zamanlı (websocket_manager.py)" {
+    class ConnectionManager {
+    - active_connections : Dict[int, Set[WebSocket]]
+    + __init__()
+    + connect(auction_id: int, websocket: WebSocket)
+    + disconnect(auction_id: int, websocket: WebSocket)
+    + listener_count(auction_id: int) : int
+    + broadcast_to_auction(auction_id: int, message: dict)
+  }
+
+}
+
+' ---------------- Servis ilişkileri ----------------
+BidService o-- BidPolicy : policy
+BidService ..> BidOutcome : üretir
+BidService ..> PlacedBid : üretir
+BidService ..> Auction : kilitler (FOR UPDATE)
+BidService ..> Bid : kaydeder
+BidService ..> AutoBidLimit : kullanır
+BidService ..> User : kullanır
+
+AuctionCloser ..> Auction : kapatır
+AuctionCloser ..> ClosedAuction : üretir
+AuctionCloser ..> CloserRun : üretir
+AuctionCloser ..> Appointment : kullanır
+
+AuctionQueries ..> Auction : sorgular
 
 @enduml
