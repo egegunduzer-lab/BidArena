@@ -1,0 +1,65 @@
+@startuml SequenceBid
+title Teklif Verme Akışı
+autonumber
+
+actor "İstemci" as Client
+participant "API\nbids.py: place_bid()" as API
+participant "BidService" as Service
+database "PostgreSQL" as DB
+participant "ConnectionManager" as Manager
+collections "WebSocket dinleyicileri" as Listeners
+
+Client -> API: POST /auctions/{auction_id}/bids\namount + Idempotency-Key
+activate API
+
+API -> API: get_bid_service() ve current_user_id
+API -> Service: place_bid(...)\nrun_in_threadpool
+activate Service
+
+Service -> DB: _lock_auction()\nSELECT ... FOR UPDATE
+DB --> Service: Auction
+
+Service -> Service: _server_now()
+Service -> DB: Idempotency-Key ile mevcut teklifi ara
+DB --> Service: Mevcut teklif var mı?
+
+alt Aynı istek daha önce işlendi
+    Service -> Service: _outcome(..., duplicate=True)
+    Service -> DB: rollback()
+    Service --> API: BidOutcome (duplicate)
+    API -> API: HTTP 200 olarak ayarla
+    API -> API: publish(outcome)
+    Note over API,Manager: duplicate olduğu için yayın yapılmaz
+    API --> Client: 200 + outcome.to_response()
+else Yeni istek
+    Service -> Service: _ensure_active()
+    Service -> DB: _get_user() ve teklif kurallarını kontrol et
+    DB --> Service: Kullanıcı
+    Service -> Service: _ensure_can_bid()
+    Service -> Service: _min_next_bid() ve _leader_id()
+
+    alt Teklif reddedilir
+        Service -> DB: rollback()
+        Service --> API: BidError
+        API -> API: to_http_error(err)
+        API --> Client: HTTP hata yanıtı
+    else Teklif geçerli
+        Service -> DB: _record_bid()
+        Service -> DB: _resolve_auto_bids()
+        Service -> Service: _maybe_extend()
+        Service -> DB: _notify_outbid()
+        Service -> Service: _outcome(...)
+        Service -> DB: commit()
+        DB --> Service: Commit tamam
+        Service --> API: BidOutcome
+        deactivate Service
+
+        API -> API: publish(outcome)
+        API -> Manager: broadcast_to_auction(...)\nNEW_BID: outcome.to_event()
+        Manager -> Listeners: Teklif olayını yayınla
+        API --> Client: HTTP 201 + outcome.to_response()
+    end
+end
+
+deactivate API
+@enduml

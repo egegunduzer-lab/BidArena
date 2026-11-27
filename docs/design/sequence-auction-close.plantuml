@@ -1,0 +1,76 @@
+@startuml SequenceAuctionClose
+title Süresi Dolan Açık Artırmayı Kapatma Akışı
+autonumber
+
+participant "scheduler.py\nauction_closer_loop()" as Scheduler
+participant "AuctionCloser" as Closer
+database "PostgreSQL" as DB
+participant "ConnectionManager" as Manager
+participant "WebSocket dinleyicileri" as Listeners
+
+loop Her yapılandırılmış aralıkta
+    Scheduler -> Scheduler: run_closer_tick(closer, manager)
+    Scheduler -> Closer: run_once()\nrun_in_threadpool
+    activate Closer
+
+    Closer -> Closer: start_due_auctions()
+    Closer -> DB: SCHEDULED ve başlangıç zamanı gelenleri\nACTIVE yap; commit()
+    DB --> Closer: started auction_id listesi
+
+    Closer -> Closer: _expired_auction_ids()
+    Closer -> DB: Sona ermiş SCHEDULED/ACTIVE\nauction_id değerlerini sorgula
+    DB --> Closer: expired auction_id listesi
+
+    loop Her sona ermiş auction_id için
+        Closer -> Closer: close_auction(auction_id)
+        Closer -> DB: Auction satırını kilitle\nFOR UPDATE SKIP LOCKED
+        DB --> Closer: Auction satırı veya None
+
+        alt Satır kilitli, bulunamadı veya zaten kapalı
+            Closer --> Closer: None döndür
+        else Kilit alındı
+            Closer -> DB: clock_timestamp() al
+            DB --> Closer: Sunucu zamanı
+
+            alt end_time > now (teklif süreyi uzatmış)
+                Closer -> DB: rollback()
+                Closer --> Closer: None döndür
+            else Açık artırma gerçekten sona ermiş
+                Closer -> Closer: _close(db, auction, now)
+                Closer -> DB: Auction.status = CLOSED\nAutoBidLimit kayıtlarını pasifleştir
+
+                alt Kazanan teklif var
+                    Closer -> DB: winner_id ve Listing.status = CLOSED ayarla
+                    Closer -> DB: PROPOSED Appointment ekle\n(auction, buyer, seller, agreed_price)
+                    Closer -> DB: flush()
+                else Teklif yok
+                    Note over Closer,DB: Kazanan ve randevu oluşturulmaz
+                end
+
+                Closer -> DB: _notify(...)\nNotification kayıtlarını ekle
+                Closer -> DB: AUCTION_CLOSED AuditLog ekle
+                Closer -> DB: commit()
+                DB --> Closer: Commit tamamlandı
+                Closer --> Closer: ClosedAuction döndür
+            end
+        end
+    end
+
+    Closer --> Scheduler: CloserRun(started, closed)
+    deactivate Closer
+
+    loop Her yeni başlayan açık artırma için
+        Scheduler -> Manager: broadcast_to_auction(\nAUCTION_STARTED)
+        Manager -> Listeners: AUCTION_STARTED olayı
+    end
+
+    loop Her kapanan açık artırma için
+        Scheduler -> Scheduler: log.info(...)
+        Scheduler -> Manager: broadcast_to_auction(\nclosed.auction_id, closed.to_event())
+        Manager -> Listeners: AUCTION_CLOSED\nauction_id, winner_id, final_price, closed_at
+    end
+
+    Scheduler -> Scheduler: asyncio.sleep(interval)
+end
+
+@enduml
